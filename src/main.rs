@@ -1,5 +1,6 @@
+use clap::App;
 use image::io::Reader as ImageReader;
-use std::{env, fs, path::Path};
+use std::{env, fs};
 use threadpool::ThreadPool;
 
 // TODO: Add more types later
@@ -9,10 +10,16 @@ const SUPPORTED_TYPES: [&str; 4] = ["JPG", "PNG", "TIFF", "JPEG"];
 
 fn thread_convert(paths: Vec<String>, new_ext: String) {
     for path in paths {
-        // Load the image                            It did not want me to use "?"
-        //                                           Here for whatever reason
-        //                                           ↓                 ↓
-        let img = ImageReader::open(&path).unwrap().decode().unwrap();
+        // Load the image
+        let img_reader = match ImageReader::open(&path) {
+            Ok(image_reader) => image_reader,
+            Err(error) => panic!("There was a problem reading the file {:?}", error),
+        };
+
+        let img = match img_reader.decode() {
+            Ok(img) => img,
+            Err(error) => panic!("There was a problem decoding the file {:?}", error),
+        };
 
         // Create new name with correct extension
         let mut path_split = path.split(".").collect::<Vec<&str>>();
@@ -26,7 +33,10 @@ fn thread_convert(paths: Vec<String>, new_ext: String) {
         let new_path = path_split.join(".");
 
         // Panics if err
-        img.save(new_path).unwrap();
+        match img.save(new_path) {
+            Ok(file) => file,
+            Err(error) => panic!("There was a problem saving the file: {:?}", error),
+        }
 
         match fs::remove_file(path) {
             Ok(file) => file,
@@ -62,11 +72,27 @@ fn verify_args(args: &Vec<String>) -> bool {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let yaml = clap::load_yaml!("cli.yml");
+    let matches = App::from_yaml(yaml).get_matches();
+
     if verify_args(&args) {
         let in_formats = args.get(2..).unwrap();
 
+        let dir = match env::current_dir() {
+            Ok(dir) => dir,
+            Err(error) => panic!(
+                "Problem opening current directory, possibly due to lack of privileges: {:?}",
+                error
+            ),
+        };
         // Makes sense
-        let paths = fs::read_dir(&Path::new(&env::current_dir().unwrap())).unwrap();
+        let paths = match fs::read_dir(&dir) {
+            Ok(paths) => paths,
+            Err(error) => panic!(
+                "Problem opening current directory, possibly due to lack of privileges: {:?}",
+                error
+            ),
+        };
 
         // What the heck
         let mut file_names_as_string =

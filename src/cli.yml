@@ -1,0 +1,15 @@
+name: Batch Convert Image
+version: "1.0"
+author: Max T.
+about: Can be used to convert a lot of different image formats to one format quickly
+args:
+    - CONVERT_TO:
+        short: to
+        help: Sets the format to convert to 
+        required: true
+        index: 1
+    - CONVERT_FROM:
+        short: from
+        min_values: 1
+        required: true
+        help: Sets the formats to convert from
