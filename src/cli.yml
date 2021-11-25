@@ -5,11 +5,16 @@ about: Can be used to convert a lot of different image formats to one format qui
 args:
     - CONVERT_TO:
         short: to
+        takes_value: true
         help: Sets the format to convert to 
         required: true
-        index: 1
     - CONVERT_FROM:
         short: from
+        takes_value: true
         min_values: 1
         required: true
         help: Sets the formats to convert from
+    - THREADS:
+        short: h
+        takes_value: true
+        help: Sets the number of conversion threads running
