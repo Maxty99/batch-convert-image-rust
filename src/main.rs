@@ -122,7 +122,7 @@ fn main() {
 
     for file_name_chunk in file_names_chunked {
         let owned_chunk_vec = file_name_chunk.to_vec();
-        let out_format = String::from(matches.value_of("CONVERT_TO").unwrap());
+        let out_format = String::from(matches.value_of("CONVERT_TO").unwrap()).to_lowercase();
         pool.execute(move || thread_convert(owned_chunk_vec, out_format));
     }
 
