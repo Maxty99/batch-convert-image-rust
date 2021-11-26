@@ -20,7 +20,7 @@ OPTIONS:
     -h <THREADS>             Sets the number of conversion threads running
 ```
 
-#TODO
+# TODO
 - [x] Use actual library for command line args
 - [ ] More options (Dir to convert to, delete original files?, dir to convert from)
 - [ ] UI??????? (Idk about this one)
