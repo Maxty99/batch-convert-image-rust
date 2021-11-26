@@ -46,21 +46,30 @@ fn thread_convert(paths: Vec<String>, new_ext: String) {
 }
 
 fn main() {
+    // Load command line config
     let yaml = clap::load_yaml!("cli.yml");
     let app = App::from_yaml(yaml);
+
+    // Get the arg mathces object to be able to pull values from
     let matches = app.get_matches();
+
+    // Threads
     let num_of_threads: usize;
+
     if matches.is_present("THREADS") {
         let num_of_threads_str = matches.value_of("THREADS").unwrap();
         num_of_threads = match num_of_threads_str.parse::<usize>() {
             Ok(num) => num,
             Err(_error) => {
-                panic!("Threads not a number");
+                println!("Threads is not a number, defaulting to 8");
+                8
             }
         };
     } else {
         num_of_threads = 8;
     };
+
+    // Input formats
     let in_formats: Vec<&str> = matches.values_of("CONVERT_FROM").unwrap().collect(); //Can unwrap because it is required
 
     let dir = match env::current_dir() {
@@ -70,7 +79,7 @@ fn main() {
             error
         ),
     };
-    // Makes sense
+
     let paths = match fs::read_dir(&dir) {
         Ok(paths) => paths,
         Err(error) => panic!(
@@ -79,7 +88,7 @@ fn main() {
         ),
     };
 
-    // What the heck
+    // Evil functional flow: Vec<String> -> (check error) -> DirEntry -> &Str -> String
     let mut file_names_as_string =
             // Filter map to get rid of err
             paths.filter_map(|entry| {
@@ -99,7 +108,7 @@ fn main() {
             // To avoid getting folders that happen to be captured by read_dir
             let mut ext = format.to_lowercase();
             ext.insert_str(0, ".");
-            if file_path.ends_with(&ext) {
+            if file_path.to_lowercase().ends_with(&ext) {
                 desired_format = true
             }
         }
@@ -107,17 +116,14 @@ fn main() {
         desired_format
     });
 
-    // Threads hardcoded for now
     let pool = ThreadPool::new(num_of_threads);
 
     let file_names_chunked = file_names_as_string.chunks(num_of_threads);
 
-    // let mut handles: Vec<JoinHandle<()>> = Vec::new();
     for file_name_chunk in file_names_chunked {
         let owned_chunk_vec = file_name_chunk.to_vec();
         let out_format = String::from(matches.value_of("CONVERT_TO").unwrap());
         pool.execute(move || thread_convert(owned_chunk_vec, out_format));
-        // handles.push(handle);
     }
 
     pool.join();
