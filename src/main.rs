@@ -147,8 +147,18 @@ fn main() {
         let handle = thread::spawn(move || thread_convert(owned_chunk_vec, out_format, progbar));
         handles.push(handle);
     }
-    multi_prog_bar.join(); //TODO: Error handling
+    match multi_prog_bar.join() {
+        Ok(_) => {}
+        Err(_) => {
+            println!("Progress bar error")
+        }
+    }; //TODO: Error handling
     for handle in handles {
-        handle.join(); //TODO: Error handling
+        match handle.join() {
+            Ok(_) => {}
+            Err(err) => {
+                println!("Error in thread: {:?}", err)
+            }
+        }; //TODO: Error handling
     }
 }
