@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 image = "0.23.14"
-threadpool = "1.8.1"
 clap = {version = "2.33", features = ["yaml"]}
+indicatif = "0.16.2"
