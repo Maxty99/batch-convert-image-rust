@@ -12,9 +12,12 @@ use std::{
 //TODO: Get rid of all those unessesary unwraps!!!
 
 fn thread_convert(paths: Vec<String>, new_ext: String, progbar: ProgressBar) {
-    let wrapped_paths = progbar.wrap_iter(paths.iter());
+    for path in paths {
+        let filename = path.split("\\");
+        // Can unwrap here, shouldnt ever be error
+        progbar.set_message(format!("...{}", filename.last().unwrap()));
+        progbar.inc(1);
 
-    for path in wrapped_paths {
         // Load the image
         let img_reader = match ImageReader::open(&path) {
             Ok(image_reader) => image_reader,
@@ -47,7 +50,9 @@ fn thread_convert(paths: Vec<String>, new_ext: String, progbar: ProgressBar) {
             Ok(file) => file,
             Err(error) => panic!("Problem deleting the file: {:?}", error),
         };
+        thread::sleep(std::time::Duration::from_millis(1500));
     }
+    progbar.finish_with_message("Done!")
 }
 
 fn main() {
@@ -121,17 +126,18 @@ fn main() {
         desired_format
     });
 
-    let file_names_chunked = file_names_as_string.chunks(num_of_threads);
+    let file_names_chunked =
+        file_names_as_string.chunks(file_names_as_string.len() / num_of_threads);
 
     let multi_prog_bar = MultiProgress::new();
 
     let mut handles: Vec<JoinHandle<()>> = Vec::with_capacity(num_of_threads); // Hint at the capacity of the vector since we know what it will be
 
     let prog_style = ProgressStyle::default_bar()
-        .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
-        .progress_chars("##-");
+        .template("[{duration}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
+        .progress_chars("#>-");
 
-    for (file_name_chunk, i) in file_names_chunked.zip(0..(num_of_threads - 1)) {
+    for file_name_chunk in file_names_chunked {
         let progbar = multi_prog_bar.add(ProgressBar::new(
             (file_name_chunk.len() as usize).try_into().unwrap(),
         ));
@@ -141,9 +147,8 @@ fn main() {
         let handle = thread::spawn(move || thread_convert(owned_chunk_vec, out_format, progbar));
         handles.push(handle);
     }
-
+    multi_prog_bar.join(); //TODO: Error handling
     for handle in handles {
         handle.join(); //TODO: Error handling
     }
-    multi_prog_bar.join_and_clear(); //TODO: Error handling
 }
