@@ -1,4 +1,4 @@
-use clap::App;
+use clap::StructOpt;
 use image::io::Reader as ImageReader;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::{
@@ -55,32 +55,36 @@ fn thread_convert(paths: Vec<String>, new_ext: String, progbar: ProgressBar) {
     progbar.finish_with_message("Done!")
 }
 
+#[derive(clap::Parser)]
+#[clap(
+    name = "Batch Convert Image",
+    version = "1.0",
+    author = "Max T.",
+    about = "Can be used to convert different image formats to one format quickly"
+)]
+struct Args {
+    #[clap(short = 't', help = "Sets the format to convert to")]
+    convert_to: String,
+
+    #[clap(short = 'f', help = "Sets the formats to convert from")]
+    convert_from: Vec<String>,
+
+    #[clap(
+        short = 'h',
+        help = "Sets the number of conversion threads running",
+        default_value = "8"
+    )]
+    threads: usize,
+}
+
 fn main() {
     // Load command line config
-    let yaml = clap::load_yaml!("cli.yml");
-    let app = App::from_yaml(yaml);
+    let args = Args::parse();
 
-    // Get the arg mathces object to be able to pull values from
-    let matches = app.get_matches();
-
-    // Threads
-    let num_of_threads: usize;
-
-    if matches.is_present("THREADS") {
-        let num_of_threads_str = matches.value_of("THREADS").unwrap();
-        num_of_threads = match num_of_threads_str.parse::<usize>() {
-            Ok(num) => num,
-            Err(_error) => {
-                println!("Threads is not a number, defaulting to 8");
-                8
-            }
-        };
-    } else {
-        num_of_threads = 8;
-    };
+    let num_of_threads = args.threads;
 
     // Input formats
-    let in_formats: Vec<&str> = matches.values_of("CONVERT_FROM").unwrap().collect(); //Can unwrap because it is required
+    let in_formats: Vec<String> = args.convert_from; //Can unwrap because it is required
 
     let dir = match env::current_dir() {
         Ok(dir) => dir,
@@ -143,7 +147,7 @@ fn main() {
         ));
         progbar.set_style(prog_style.clone());
         let owned_chunk_vec = file_name_chunk.to_vec();
-        let out_format = String::from(matches.value_of("CONVERT_TO").unwrap()).to_lowercase();
+        let out_format = args.convert_to.to_lowercase();
         let handle = thread::spawn(move || thread_convert(owned_chunk_vec, out_format, progbar));
         handles.push(handle);
     }
