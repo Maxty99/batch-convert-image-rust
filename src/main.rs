@@ -146,7 +146,7 @@ fn main() {
         .collect::<Vec<PathBuf>>();
 
     let file_names_chunked =
-        file_names_as_string.chunks(file_names_as_string.len() / num_of_threads);
+        file_names_as_string.chunks(file_names_as_string.len() / num_of_threads); //Todo: handle case where no images found
 
     let multi_prog_bar = MultiProgress::new();
 
