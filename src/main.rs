@@ -37,12 +37,12 @@ fn thread_convert(
 
         // Panics if err
         match img.save(&dest_dir) {
-            Ok(file) => file,
+            Ok(_) => {}
             Err(error) => panic!("There was a problem saving the file: {:?}", error),
         }
         if delete_files {
             match fs::remove_file(&old_path) {
-                Ok(file) => file,
+                Ok(_) => {}
                 Err(error) => panic!("Problem deleting the file: {:?}", error),
             };
         }
