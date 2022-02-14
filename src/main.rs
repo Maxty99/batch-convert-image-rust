@@ -7,11 +7,6 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-// TODO: Add more types later
-// const SUPPORTED_TYPES: [&str; 4] = ["JPG", "PNG", "TIFF", "JPEG"];
-
-//TODO: Get rid of all those unessesary unwraps!!!
-
 fn thread_convert(
     paths: Vec<PathBuf>,
     new_ext: String,
@@ -20,8 +15,8 @@ fn thread_convert(
     mut dest_dir: PathBuf,
 ) {
     for mut path in paths {
-        let filename = path.file_name().unwrap(); // Guarentee no panic as there are no folders
-                                                  // Can unwrap here, shouldnt ever be error
+        let filename = path.file_name().unwrap(); // Guarantee no panic as there are no folders
+
         progbar.set_message(format!("...{}", filename.to_string_lossy()));
         progbar.inc(1);
 
@@ -37,7 +32,7 @@ fn thread_convert(
         };
         let old_path = path.clone();
         path.set_extension(&new_ext);
-        let new_filename = path.file_name().unwrap(); // Guarentee no panic as there are no folders
+        let new_filename = path.file_name().unwrap(); // Guarantee no panic as there are no folders
         dest_dir.set_file_name(new_filename);
 
         // Panics if err
@@ -180,13 +175,13 @@ fn main() {
         Err(_) => {
             println!("Progress bar error")
         }
-    }; //TODO: Error handling
+    };
     for handle in handles {
         match handle.join() {
             Ok(_) => {}
             Err(err) => {
                 println!("Error in thread: {:?}", err)
             }
-        }; //TODO: Error handling
+        };
     }
 }
