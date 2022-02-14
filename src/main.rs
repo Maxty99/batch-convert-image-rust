@@ -2,6 +2,7 @@ use clap::StructOpt;
 use image::io::Reader as ImageReader;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::{
+    fs,
     path::PathBuf,
     thread::{self, JoinHandle},
 };
@@ -11,7 +12,7 @@ use std::{
 
 //TODO: Get rid of all those unessesary unwraps!!!
 
-fn thread_convert(paths: Vec<PathBuf>, new_ext: String, progbar: ProgressBar) {
+fn thread_convert(paths: Vec<PathBuf>, new_ext: String, progbar: ProgressBar, delete_files: bool) {
     for mut path in paths {
         let filename = path.file_name().unwrap();
         // Can unwrap here, shouldnt ever be error
@@ -36,11 +37,12 @@ fn thread_convert(paths: Vec<PathBuf>, new_ext: String, progbar: ProgressBar) {
             Ok(file) => file,
             Err(error) => panic!("There was a problem saving the file: {:?}", error),
         }
-
-        match fs::remove_file(&path) {
-            Ok(file) => file,
-            Err(error) => panic!("Problem deleting the file: {:?}", error),
-        };
+        if delete_files {
+            match fs::remove_file(&path) {
+                Ok(file) => file,
+                Err(error) => panic!("Problem deleting the file: {:?}", error),
+            };
+        }
     }
     progbar.finish_with_message("Done!")
 }
@@ -72,6 +74,10 @@ struct Args {
         default_value = "."
     )]
     convert_dest: PathBuf,
+
+    #[clap(short = 'd', help = "Set if you want to delete the original images")]
+    delete_original: bool,
+
     #[clap(
         short = 'h',
         help = "Sets the number of conversion threads running",
@@ -143,7 +149,9 @@ fn main() {
         progbar.set_style(prog_style.clone());
         let owned_chunk_vec = file_name_chunk.to_vec();
         let out_format = args.convert_to.to_lowercase();
-        let handle = thread::spawn(move || thread_convert(owned_chunk_vec, out_format, progbar));
+        let handle = thread::spawn(move || {
+            thread_convert(owned_chunk_vec, out_format, progbar, args.delete_original)
+        });
         handles.push(handle);
     }
     match multi_prog_bar.join() {
