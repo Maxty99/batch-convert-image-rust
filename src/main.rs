@@ -58,7 +58,13 @@ struct Args {
     #[clap(short = 't', help = "Sets the format to convert to")]
     convert_to: String,
 
-    #[clap(short = 'f', help = "Sets the formats to convert from")]
+    #[clap(
+        short = 'f',
+        help = "Sets the formats to convert from",
+        multiple_values = true,
+        min_values = 1,
+        required = true
+    )]
     convert_from: Vec<String>,
 
     #[clap(
