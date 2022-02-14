@@ -12,10 +12,16 @@ use std::{
 
 //TODO: Get rid of all those unessesary unwraps!!!
 
-fn thread_convert(paths: Vec<PathBuf>, new_ext: String, progbar: ProgressBar, delete_files: bool) {
+fn thread_convert(
+    paths: Vec<PathBuf>,
+    new_ext: String,
+    progbar: ProgressBar,
+    delete_files: bool,
+    mut dest_dir: PathBuf,
+) {
     for mut path in paths {
-        let filename = path.file_name().unwrap();
-        // Can unwrap here, shouldnt ever be error
+        let filename = path.file_name().unwrap(); // Guarentee no panic as there are no folders
+                                                  // Can unwrap here, shouldnt ever be error
         progbar.set_message(format!("...{}", filename.to_string_lossy()));
         progbar.inc(1);
 
@@ -29,16 +35,18 @@ fn thread_convert(paths: Vec<PathBuf>, new_ext: String, progbar: ProgressBar, de
             Ok(img) => img,
             Err(error) => panic!("There was a problem decoding the file {:?}", error),
         };
-
+        let old_path = path.clone();
         path.set_extension(&new_ext);
+        let new_filename = path.file_name().unwrap(); // Guarentee no panic as there are no folders
+        dest_dir.set_file_name(new_filename);
 
         // Panics if err
-        match img.save(&path) {
+        match img.save(&dest_dir) {
             Ok(file) => file,
             Err(error) => panic!("There was a problem saving the file: {:?}", error),
         }
         if delete_files {
-            match fs::remove_file(&path) {
+            match fs::remove_file(&old_path) {
                 Ok(file) => file,
                 Err(error) => panic!("Problem deleting the file: {:?}", error),
             };
@@ -155,8 +163,15 @@ fn main() {
         progbar.set_style(prog_style.clone());
         let owned_chunk_vec = file_name_chunk.to_vec();
         let out_format = args.convert_to.to_lowercase();
+        let dest_dir = args.convert_dest.clone();
         let handle = thread::spawn(move || {
-            thread_convert(owned_chunk_vec, out_format, progbar, args.delete_original)
+            thread_convert(
+                owned_chunk_vec,
+                out_format,
+                progbar,
+                args.delete_original,
+                dest_dir,
+            )
         });
         handles.push(handle);
     }
