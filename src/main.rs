@@ -79,7 +79,7 @@ struct Args {
     delete_original: bool,
 
     #[clap(
-        short = 'h',
+        short = 'r',
         help = "Sets the number of conversion threads running",
         default_value = "8"
     )]
