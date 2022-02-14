@@ -50,7 +50,6 @@ fn thread_convert(paths: Vec<String>, new_ext: String, progbar: ProgressBar) {
             Ok(file) => file,
             Err(error) => panic!("Problem deleting the file: {:?}", error),
         };
-        thread::sleep(std::time::Duration::from_millis(1500));
     }
     progbar.finish_with_message("Done!")
 }
