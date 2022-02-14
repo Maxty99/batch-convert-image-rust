@@ -84,7 +84,7 @@ fn main() {
     let num_of_threads = args.threads;
 
     // Input formats
-    let in_formats: Vec<String> = args.convert_from; //Can unwrap because it is required
+    let in_formats: Vec<String> = args.convert_from;
 
     let dir = match env::current_dir() {
         Ok(dir) => dir,
