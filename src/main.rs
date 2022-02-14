@@ -2,7 +2,7 @@ use clap::StructOpt;
 use image::io::Reader as ImageReader;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::{
-    env, fs,
+    path::PathBuf,
     thread::{self, JoinHandle},
 };
 
@@ -11,11 +11,11 @@ use std::{
 
 //TODO: Get rid of all those unessesary unwraps!!!
 
-fn thread_convert(paths: Vec<String>, new_ext: String, progbar: ProgressBar) {
-    for path in paths {
-        let filename = path.split("\\");
+fn thread_convert(paths: Vec<PathBuf>, new_ext: String, progbar: ProgressBar) {
+    for mut path in paths {
+        let filename = path.file_name().unwrap();
         // Can unwrap here, shouldnt ever be error
-        progbar.set_message(format!("...{}", filename.last().unwrap()));
+        progbar.set_message(format!("...{}", filename.to_string_lossy()));
         progbar.inc(1);
 
         // Load the image
@@ -29,24 +29,15 @@ fn thread_convert(paths: Vec<String>, new_ext: String, progbar: ProgressBar) {
             Err(error) => panic!("There was a problem decoding the file {:?}", error),
         };
 
-        // Create new name with correct extension
-        let mut path_split = path.split(".").collect::<Vec<&str>>();
-
-        //Remove the old extension
-        path_split.pop();
-
-        path_split.push(new_ext.as_str());
-
-        // Join the path back with the new ext
-        let new_path = path_split.join(".");
+        path.set_extension(&new_ext);
 
         // Panics if err
-        match img.save(new_path) {
+        match img.save(&path) {
             Ok(file) => file,
             Err(error) => panic!("There was a problem saving the file: {:?}", error),
         }
 
-        match fs::remove_file(path) {
+        match fs::remove_file(&path) {
             Ok(file) => file,
             Err(error) => panic!("Problem deleting the file: {:?}", error),
         };
@@ -69,6 +60,19 @@ struct Args {
     convert_from: Vec<String>,
 
     #[clap(
+        short = 'i',
+        help = "Sets the location of the input images",
+        default_value = "."
+    )]
+    convert_dir: PathBuf,
+
+    #[clap(
+        short = 'o',
+        help = "Sets the destination of the converted images",
+        default_value = "."
+    )]
+    convert_dest: PathBuf,
+    #[clap(
         short = 'h',
         help = "Sets the number of conversion threads running",
         default_value = "8"
@@ -85,13 +89,7 @@ fn main() {
     // Input formats
     let in_formats: Vec<String> = args.convert_from;
 
-    let dir = match env::current_dir() {
-        Ok(dir) => dir,
-        Err(error) => panic!(
-            "Problem opening current directory, possibly due to lack of privileges: {:?}",
-            error
-        ),
-    };
+    let dir = args.convert_dir;
 
     let paths = match fs::read_dir(&dir) {
         Ok(paths) => paths,
@@ -118,14 +116,14 @@ fn main() {
                     }
                     if desired_format {
                         //Return converted to String
-                        Some(String::from(entry))
+                        Some(PathBuf::from(entry))
                     } else {
                         None
                     }
                 })
             })
         })
-        .collect::<Vec<String>>();
+        .collect::<Vec<PathBuf>>();
 
     let file_names_chunked =
         file_names_as_string.chunks(file_names_as_string.len() / num_of_threads);
