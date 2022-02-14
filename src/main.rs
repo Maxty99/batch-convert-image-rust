@@ -102,33 +102,31 @@ fn main() {
         ),
     };
 
-    // Evil functional flow: Vec<String> -> (check error) -> DirEntry -> &Str -> String
-    let mut file_names_as_string =
-            // Filter map to get rid of err
-            paths.filter_map(|entry| {
-                entry.ok()
-                .and_then(|entry| {
-                    entry.path().to_str()
-                    .and_then(|entry| {
-                        //Convert to string and use some because it yells at me if I dont
+    // Evil functional flow: ReadDir -> (Check Error) -> convert to str -> Manipulate str to filter unneded files and fodlers -> convert str to String and return
+    let file_names_as_string = paths
+        .filter_map(|entry| {
+            entry.ok().and_then(|entry| {
+                entry.path().to_str().and_then(|entry| {
+                    //Check if its part of out desired formats
+                    let mut desired_format = false;
+                    for format in &in_formats {
+                        // To avoid getting folders that happen to be captured by read_dir
+                        let mut ext = format.to_lowercase();
+                        ext.insert_str(0, ".");
+                        if entry.to_lowercase().ends_with(&ext) {
+                            desired_format = true
+                        }
+                    }
+                    if desired_format {
+                        //Return converted to String
                         Some(String::from(entry))
-                    })
+                    } else {
+                        None
+                    }
                 })
-            }).collect::<Vec<String>>();
-
-    file_names_as_string.retain(|file_path| {
-        let mut desired_format = false;
-        for format in &in_formats {
-            // To avoid getting folders that happen to be captured by read_dir
-            let mut ext = format.to_lowercase();
-            ext.insert_str(0, ".");
-            if file_path.to_lowercase().ends_with(&ext) {
-                desired_format = true
-            }
-        }
-
-        desired_format
-    });
+            })
+        })
+        .collect::<Vec<String>>();
 
     let file_names_chunked =
         file_names_as_string.chunks(file_names_as_string.len() / num_of_threads);
